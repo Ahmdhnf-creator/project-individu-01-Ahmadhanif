@@ -82,7 +82,8 @@ export async function uploadProof(orderId: string, formData: FormData){
   return url;
 }
 export async function updatePaymentStatus(orderId: string, status: "BELUM_BAYAR"|"LUNAS"){
-  await requireUser();
+  const user = await requireUser();
+  if(user.role==="PELANGGAN") throw new Error("Forbidden: hanya STAFF/ADMIN yang bisa verifikasi pembayaran");
   const order = await prisma.order.findUnique({where:{id:orderId}});
   if(!order) throw new Error("Not found");
   if(order.paymentMethod==="TRANSFER" && status==="LUNAS" && !order.proofUrl) throw new Error("Upload bukti transfer dulu");
