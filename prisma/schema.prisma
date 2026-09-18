@@ -1,0 +1,103 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  ADMIN
+  STAFF
+  PELANGGAN
+}
+
+enum OrderStatus {
+  BARU
+  DIPROSES
+  DIKIRIM
+  SELESAI
+  BATAL
+}
+
+enum PaymentMethod {
+  TRANSFER
+  COD
+}
+
+enum PaymentStatus {
+  BELUM_BAYAR
+  LUNAS
+}
+
+model User {
+  id        String    @id @default(cuid())
+  email     String    @unique
+  password  String
+  name      String
+  role      Role      @default(PELANGGAN)
+  wa        String?
+  address   String?
+  sessions  Session[]
+  orders    Order[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model Product {
+  id         String      @id @default(cuid())
+  name       String
+  price      Int
+  stock      Int         @default(0)
+  orderItems OrderItem[]
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+}
+
+model Customer {
+  id        String   @id @default(cuid())
+  name      String
+  wa        String
+  address   String?
+  orders    Order[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Order {
+  id            String        @id @default(cuid())
+  customerId    String?
+  customer      Customer?     @relation(fields: [customerId], references: [id])
+  userId        String?
+  user          User?         @relation(fields: [userId], references: [id])
+  status        OrderStatus   @default(BARU)
+  paymentMethod PaymentMethod
+  paymentStatus PaymentStatus @default(BELUM_BAYAR)
+  proofUrl      String?
+  total         Int           @default(0)
+  items         OrderItem[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  qty       Int
+  price     Int
+  subtotal  Int
+
+  @@unique([orderId, productId])
+}
