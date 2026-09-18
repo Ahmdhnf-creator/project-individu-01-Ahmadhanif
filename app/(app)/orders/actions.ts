@@ -5,6 +5,7 @@ import { canTransition, calculateTotal } from "@/lib/order";
 import type { OrderStatus } from "@/lib/order";
 import { revalidatePath } from "next/cache";
 import { createOrderSchema } from "@/lib/validations";
+import { saveFile, validateFile } from "@/lib/storage";
 
 export async function createOrder(formData: FormData){
   const user = await requireUser();
@@ -64,5 +65,28 @@ export async function deleteOrder(id: string){
   if(order.status==="SELESAI") throw new Error("Tidak boleh hapus pesanan selesai");
   if(user.role==="PELANGGAN" && order.userId!==user.id) throw new Error("Forbidden");
   await prisma.order.delete({where:{id}});
+  revalidatePath("/orders");
+}
+
+export async function uploadProof(orderId: string, formData: FormData){
+  const user = await requireUser();
+  const order = await prisma.order.findUnique({where:{id:orderId}});
+  if(!order) throw new Error("Order tidak ditemukan");
+  if(user.role==="PELANGGAN" && order.userId!==user.id) throw new Error("Forbidden");
+  const file = formData.get("proof") as File;
+  if(!file || file.size===0) throw new Error("File wajib");
+  validateFile(file);
+  const url = await saveFile(file);
+  await prisma.order.update({ where:{id:orderId}, data:{ proofUrl: url }});
+  revalidatePath(`/orders/${orderId}`);
+  return url;
+}
+export async function updatePaymentStatus(orderId: string, status: "BELUM_BAYAR"|"LUNAS"){
+  await requireUser();
+  const order = await prisma.order.findUnique({where:{id:orderId}});
+  if(!order) throw new Error("Not found");
+  if(order.paymentMethod==="TRANSFER" && status==="LUNAS" && !order.proofUrl) throw new Error("Upload bukti transfer dulu");
+  await prisma.order.update({ where:{id:orderId}, data:{ paymentStatus: status as any }});
+  revalidatePath(`/orders/${orderId}`);
   revalidatePath("/orders");
 }
