@@ -1,8 +1,8 @@
 import { getCurrentUser } from "@/lib/auth";
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { prisma } from "@/lib/prisma";
 import Link from "next/link";
+import { cookies } from "next/headers";
+import { prisma } from "@/lib/prisma";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await getCurrentUser();

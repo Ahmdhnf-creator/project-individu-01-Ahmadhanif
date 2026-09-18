@@ -3,7 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { hashPassword, createSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 
-export default function RegisterPage({ searchParams }: { searchParams: { error?: string } }) {
+export default async function RegisterPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
+  const { error } = await searchParams;
   async function register(formData: FormData) {
     "use server";
     const data = registerSchema.parse(Object.fromEntries(formData));
@@ -20,7 +21,7 @@ export default function RegisterPage({ searchParams }: { searchParams: { error?:
     <main className="flex min-h-screen items-center justify-center">
       <div className="w-full max-w-md rounded-lg border p-8">
         <h1 className="mb-6 text-2xl font-bold">Daftar</h1>
-        {searchParams.error && <p className="mb-4 rounded bg-red-100 p-2 text-sm text-red-600">{searchParams.error}</p>}
+        {error && <p className="mb-4 rounded bg-red-100 p-2 text-sm text-red-600">{error}</p>}
         <form action={register} className="space-y-4">
           <div>
             <label className="block text-sm font-medium">Nama</label>

@@ -3,7 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { verifyPassword, createSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 
-export default function LoginPage({ searchParams }: { searchParams: { error?: string } }) {
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
+  const { error } = await searchParams;
   async function login(formData: FormData) {
     "use server";
     const data = loginSchema.parse(Object.fromEntries(formData));
@@ -16,7 +17,7 @@ export default function LoginPage({ searchParams }: { searchParams: { error?: st
     <main className="flex min-h-screen items-center justify-center">
       <div className="w-full max-w-md rounded-lg border p-8">
         <h1 className="mb-6 text-2xl font-bold">Login</h1>
-        {searchParams.error && <p className="mb-4 rounded bg-red-100 p-2 text-sm text-red-600">{searchParams.error}</p>}
+        {error && <p className="mb-4 rounded bg-red-100 p-2 text-sm text-red-600">{error}</p>}
         <form action={login} className="space-y-4">
           <div>
             <label className="block text-sm font-medium">Email</label>
@@ -31,7 +32,8 @@ export default function LoginPage({ searchParams }: { searchParams: { error?: st
           </button>
         </form>
         <p className="mt-4 text-center text-sm">
-          Belum punya akun? <a href="/register" className="underline">Daftar</a>
+          Belum punya akun? <a href="/register" className="underline">Daftar</a> {/* TODO: use Link */}
+
         </p>
       </div>
     </main>
