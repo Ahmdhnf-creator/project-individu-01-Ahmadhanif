@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
+import { Toaster } from "sonner";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await getCurrentUser();
@@ -41,6 +42,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </form>
         </header>
         <main className="flex-1 p-6">{children}</main>
+        <Toaster richColors />
       </div>
     </div>
   );
