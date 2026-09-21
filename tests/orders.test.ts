@@ -9,7 +9,8 @@ describe("order state machine", () => {
     expect(canTransition("SELESAI","BATAL")).toBe(false);
     expect(canTransition("BARU","BATAL")).toBe(true);
     expect(canTransition("DIPROSES","BATAL")).toBe(true);
-    expect(canTransition("DIKIRIM","BATAL")).toBe(false);
+    expect(canTransition("DIPROSES","SELESAI")).toBe(true);
+    expect(canTransition("DIKIRIM","BATAL")).toBe(true);
   });
   it("getNextStatuses", () => {
     expect(getNextStatuses("BARU")).toEqual(expect.arrayContaining(["DIPROSES","BATAL"]));

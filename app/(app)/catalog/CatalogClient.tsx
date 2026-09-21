@@ -4,12 +4,12 @@ import { toast } from "sonner";
 import { calculateTotal } from "@/lib/order";
 import { createOrder } from "../orders/actions";
 
-type Product = { id: string; name: string; price: number; stock: number };
+type Product = { id: string; name: string; price: number; stock: number; unit?: string; type?: string; trackStock?: boolean; description?: string | null };
 type CartItem = { productId: string; name: string; price: number; qty: number };
 
 export default function CatalogClient({ products, customers, isPelanggan }: { products: Product[]; customers: { id:string; name:string }[]; isPelanggan: boolean }) {
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [paymentMethod, setPaymentMethod] = useState<"TRANSFER"|"COD">("COD");
+  const [paymentMethod, setPaymentMethod] = useState<"TRANSFER"|"COD"|"TUNAI"|"QRIS">("COD");
   const [customerId, setCustomerId] = useState("");
 
   function addToCart(p: Product){
@@ -48,7 +48,8 @@ export default function CatalogClient({ products, customers, isPelanggan }: { pr
           {products.map(p=>(
             <div key={p.id} className="rounded border p-4">
               <div className="font-medium">{p.name}</div>
-              <div className="text-sm text-gray-600">Rp {p.price.toLocaleString("id-ID")} — Stok: {p.stock}</div>
+              <div className="text-xs text-gray-500">{p.type ?? "BARANG"} • {p.unit ?? "pcs"}{p.description ? ` • ${p.description}` : ""}</div>
+              <div className="text-sm text-gray-600">Rp {p.price.toLocaleString("id-ID")} / {p.unit ?? "pcs"} {p.trackStock === false ? "" : `— Stok: ${p.stock}`}</div>
               <button onClick={()=>addToCart(p)} className="mt-2 rounded bg-black px-3 py-1 text-sm text-white">Tambah</button>
             </div>
           ))}
@@ -79,6 +80,8 @@ export default function CatalogClient({ products, customers, isPelanggan }: { pr
             <select value={paymentMethod} onChange={e=>setPaymentMethod(e.target.value as any)} className="w-full rounded border px-2 py-2 text-sm">
               <option value="COD">COD</option>
               <option value="TRANSFER">TRANSFER</option>
+              <option value="TUNAI">TUNAI</option>
+              <option value="QRIS">QRIS</option>
             </select>
             <button onClick={handleCheckout} className="w-full rounded bg-black px-3 py-2 text-sm text-white">Checkout</button>
           </div>

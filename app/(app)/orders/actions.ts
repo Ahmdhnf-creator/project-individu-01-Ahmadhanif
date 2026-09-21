@@ -17,9 +17,14 @@ export async function createOrder(formData: FormData){
   const parsed = createOrderSchema.parse(raw);
   const products = await prisma.product.findMany({ where:{ id:{ in: parsed.items.map(i=>i.productId)}}});
   if(products.length !== parsed.items.length) throw new Error("Produk tidak ditemukan");
+  // validasi isActive & stok hanya jika trackStock
+  for(const p of products){
+    if(!p.isActive) throw new Error(`Produk ${p.name} tidak aktif`);
+  }
   const itemsWithPrice = parsed.items.map(i=>{
     const p = products.find(x=>x.id===i.productId)!;
-    return { productId:i.productId, qty:i.qty, price:p.price, subtotal:p.price*i.qty };
+    if(p.trackStock && p.stock < i.qty) throw new Error(`Stok ${p.name} tidak cukup (sisa ${p.stock})`);
+    return { productId:i.productId, qty:i.qty, unit: p.unit, price:p.price, subtotal:p.price*i.qty };
   });
   const total = calculateTotal(itemsWithPrice);
   await prisma.$transaction(async (tx)=>{
@@ -29,6 +34,7 @@ export async function createOrder(formData: FormData){
       paymentMethod: parsed.paymentMethod as any,
       total,
       status: "BARU",
+      note: parsed.note || null,
     }});
     await tx.orderItem.createMany({ data: itemsWithPrice.map(it=>({ orderId: order.id, ...it }))});
   });
@@ -46,8 +52,11 @@ export async function updateOrderStatus(id: string, next: OrderStatus){
     await prisma.$transaction(async (tx)=>{
       for(const item of order.items){
         const p = await tx.product.findUnique({where:{id:item.productId}});
-        if(!p || p.stock < item.qty) throw new Error(`Stok ${p?.name ?? item.productId} tidak cukup`);
-        await tx.product.update({ where:{id:p.id}, data:{ stock:{ decrement: item.qty }}});
+        if(!p) throw new Error(`Produk ${item.productId} tidak ditemukan`);
+        if(p.trackStock && p.stock < item.qty) throw new Error(`Stok ${p.name} tidak cukup (sisa ${p.stock})`);
+        if(p.trackStock){
+          await tx.product.update({ where:{id:p.id}, data:{ stock:{ decrement: item.qty }}});
+        }
       }
       await tx.order.update({ where:{id}, data:{ status: next as any }});
     });

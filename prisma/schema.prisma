@@ -21,9 +21,17 @@ enum OrderStatus {
   BATAL
 }
 
+enum ItemType {
+  BARANG
+  JASA
+  SEWA
+}
+
 enum PaymentMethod {
   TRANSFER
   COD
+  TUNAI
+  QRIS
 }
 
 enum PaymentStatus {
@@ -54,13 +62,18 @@ model Session {
 }
 
 model Product {
-  id         String      @id @default(cuid())
-  name       String
-  price      Int
-  stock      Int         @default(0)
-  orderItems OrderItem[]
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
+  id          String      @id @default(cuid())
+  name        String
+  description String?
+  price       Int
+  unit        String      @default("pcs")
+  type        ItemType    @default(BARANG)
+  trackStock  Boolean     @default(true)
+  stock       Int         @default(0)
+  isActive    Boolean     @default(true)
+  orderItems  OrderItem[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 }
 
 model Customer {
@@ -84,20 +97,25 @@ model Order {
   paymentStatus PaymentStatus @default(BELUM_BAYAR)
   proofUrl      String?
   total         Int           @default(0)
+  note          String?
   items         OrderItem[]
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 }
 
 model OrderItem {
-  id        String  @id @default(cuid())
+  id        String    @id @default(cuid())
   orderId   String
-  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order     Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
   productId String
-  product   Product @relation(fields: [productId], references: [id])
+  product   Product   @relation(fields: [productId], references: [id])
   qty       Int
+  unit      String    @default("pcs")
   price     Int
   subtotal  Int
+  note      String?
+  startDate DateTime?
+  endDate   DateTime?
 
   @@unique([orderId, productId])
 }
