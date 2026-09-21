@@ -77,8 +77,10 @@ export async function deleteOrder(id: string){
   revalidatePath("/orders");
 }
 
-export async function uploadProof(orderId: string, formData: FormData){
+export async function uploadProof(formData: FormData){
   const user = await requireUser();
+  const orderId = formData.get("orderId") as string;
+  if(!orderId) throw new Error("orderId wajib");
   const order = await prisma.order.findUnique({where:{id:orderId}});
   if(!order) throw new Error("Order tidak ditemukan");
   if(user.role==="PELANGGAN" && order.userId!==user.id) throw new Error("Forbidden");

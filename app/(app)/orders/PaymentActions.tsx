@@ -11,9 +11,10 @@ export function PaymentActions({ orderId, paymentMethod, paymentStatus, proofUrl
   async function handleUpload(){
     if(!file) { toast.error("Pilih file dulu"); return; }
     const fd = new FormData();
+    fd.set("orderId", orderId);
     fd.set("proof", file);
     try{
-      await uploadProof(orderId, fd);
+      await uploadProof(fd);
       toast.success("Bukti diupload");
       router.refresh();
     }catch(e:unknown){
