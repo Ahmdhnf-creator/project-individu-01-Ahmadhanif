@@ -33,7 +33,14 @@ export async function updateProduct(id: string, formData: FormData){
 export async function deleteProduct(id: string){
   await requireRole("STAFF");
   const count = await prisma.orderItem.count({ where:{ productId:id }});
-  if(count>0) throw new Error("Produk masih dipakai di pesanan");
+  if(count>0){
+    await prisma.product.update({ where:{id}, data:{ isActive: false }});
+    revalidatePath("/products");
+    revalidatePath("/catalog");
+    return { soft: true } as const;
+  }
   await prisma.product.delete({ where:{id}});
   revalidatePath("/products");
+  revalidatePath("/catalog");
+  return { soft: false } as const;
 }

@@ -16,7 +16,16 @@ export const customerSchema = z.object({ name: z.string().min(2), wa: z.string()
 export const createOrderSchema = z.object({
   customerId: z.string().optional(),
   paymentMethod: z.enum(["TRANSFER", "COD", "TUNAI", "QRIS"]),
-  items: z.array(z.object({ productId: z.string(), qty: z.coerce.number().int().min(1) })).min(1),
+  items: z
+    .array(
+      z.object({
+        productId: z.string(),
+        qty: z.coerce.number().int().min(1),
+        startDate: z.string().optional(),
+        endDate: z.string().optional(),
+      })
+    )
+    .min(1),
   note: z.string().optional(),
 });
 export const updateStatusSchema = z.object({ status: z.enum(["BARU","DIPROSES","DIKIRIM","SELESAI","BATAL"]) });

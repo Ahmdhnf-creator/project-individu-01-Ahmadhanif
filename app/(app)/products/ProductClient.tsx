@@ -107,8 +107,12 @@ function DeleteButton({ id }: { id: string }) {
   async function handleDelete() {
     if (!confirm("Hapus produk ini?")) return;
     try {
-      await deleteProduct(id);
-      toast.success("Produk dihapus");
+      const res = (await deleteProduct(id)) as unknown as { soft?: boolean } | undefined;
+      if (res?.soft) {
+        toast.success("Produk sudah digunakan dalam pesanan, jadi dinonaktifkan agar histori tetap aman.");
+      } else {
+        toast.success("Produk dihapus");
+      }
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Gagal hapus produk");
     }

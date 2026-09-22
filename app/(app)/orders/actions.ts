@@ -1,7 +1,7 @@
 "use server";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
-import { canTransition, calculateTotal } from "@/lib/order";
+import { canTransition, getRentalDaysInclusive } from "@/lib/order";
 import type { OrderStatus } from "@/lib/order";
 import { revalidatePath } from "next/cache";
 import { createOrderSchema } from "@/lib/validations";
@@ -24,9 +24,24 @@ export async function createOrder(formData: FormData){
   const itemsWithPrice = parsed.items.map(i=>{
     const p = products.find(x=>x.id===i.productId)!;
     if(p.trackStock && p.stock < i.qty) throw new Error(`Stok ${p.name} tidak cukup (sisa ${p.stock})`);
-    return { productId:i.productId, qty:i.qty, unit: p.unit, price:p.price, subtotal:p.price*i.qty };
+    // SEWA: hitung durasi inclusive, subtotal = harga * durasi (+ qty jika >1 unit)
+    if((p as unknown as { type: string }).type === "SEWA"){
+      const start = (i as unknown as { startDate?: string }).startDate;
+      const end = (i as unknown as { endDate?: string }).endDate;
+      if(!start || !end) throw new Error(`Tanggal sewa wajib untuk ${p.name}`);
+      const days = getRentalDaysInclusive(start, end);
+      if(days < 1) throw new Error(`Durasi tidak valid untuk ${p.name}`);
+      // validasi tanggal mulai <= kembali sudah dihitung via days (jika end<start, days akan <1 tapi kita throw)
+      // cek start <= end
+      const s = new Date(String(start));
+      const e = new Date(String(end));
+      if(s.getTime() > e.getTime()) throw new Error(`Tanggal mulai tidak boleh setelah tanggal kembali untuk ${p.name}`);
+      const subtotal = p.price * days * i.qty;
+      return { productId:i.productId, qty:i.qty, unit: p.unit, price:p.price, subtotal, startDate: new Date(String(start)), endDate: new Date(String(end)) };
+    }
+    return { productId:i.productId, qty:i.qty, unit: p.unit, price:p.price, subtotal:p.price*i.qty, startDate: null as unknown as Date, endDate: null as unknown as Date };
   });
-  const total = calculateTotal(itemsWithPrice);
+  const total = itemsWithPrice.reduce((a,b)=>a+b.subtotal,0);
   await prisma.$transaction(async (tx)=>{
     const order = await tx.order.create({ data:{
       customerId: user.role==="PELANGGAN" ? null : (parsed.customerId || null),
