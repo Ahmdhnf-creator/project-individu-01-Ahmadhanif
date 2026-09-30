@@ -82,6 +82,56 @@ export async function updateOrderStatus(id: string, next: OrderStatus){
   revalidatePath(`/orders/${id}`);
 }
 
+export async function createGuestOrder(formData: FormData){
+  const raw = {
+    guestName: (formData.get("guestName") as string) || "",
+    guestWa: (formData.get("guestWa") as string) || "",
+    guestAddress: (formData.get("guestAddress") as string) || undefined,
+    paymentMethod: formData.get("paymentMethod") as string,
+    items: JSON.parse((formData.get("items") as string) || "[]"),
+  };
+  if(!raw.guestName || raw.guestName.trim().length < 2) throw new Error("Nama wajib minimal 2 karakter");
+  if(!raw.guestWa || raw.guestWa.trim().length < 8) throw new Error("WhatsApp wajib minimal 8 karakter");
+  const parsedItems = createOrderSchema.shape.items.parse(raw.items);
+  // reuse paymentMethod validation
+  createOrderSchema.shape.paymentMethod.parse(raw.paymentMethod);
+  const products = await prisma.product.findMany({ where:{ id:{ in: parsedItems.map((i: { productId: string })=>i.productId)}}});
+  if(products.length !== parsedItems.length) throw new Error("Produk tidak ditemukan");
+  for(const p of products){
+    if(!p.isActive) throw new Error(`Produk ${p.name} tidak aktif`);
+  }
+  const itemsWithPrice = parsedItems.map((i: { productId: string; qty: number; startDate?: string; endDate?: string })=>{
+    const p = products.find(x=>x.id===i.productId)!;
+    if(p.trackStock && p.stock < i.qty) throw new Error(`Stok ${p.name} tidak cukup (sisa ${p.stock})`);
+    if((p as unknown as { type: string }).type === "SEWA"){
+      const start = (i as unknown as { startDate?: string }).startDate;
+      const end = (i as unknown as { endDate?: string }).endDate;
+      if(!start || !end) throw new Error(`Tanggal sewa wajib untuk ${p.name}`);
+      const days = getRentalDaysInclusive(start, end);
+      if(new Date(String(start)).getTime() > new Date(String(end)).getTime()) throw new Error(`Tanggal mulai tidak boleh setelah kembali untuk ${p.name}`);
+      const subtotal = p.price * days * i.qty;
+      return { productId:i.productId, qty:i.qty, unit: p.unit, price:p.price, subtotal, startDate: new Date(String(start)), endDate: new Date(String(end)) };
+    }
+    return { productId:i.productId, qty:i.qty, unit: p.unit, price:p.price, subtotal:p.price*i.qty, startDate: null as unknown as Date, endDate: null as unknown as Date };
+  });
+  const total = itemsWithPrice.reduce((a,b)=>a+b.subtotal,0);
+  // buat customer baru untuk guest (tanpa User)
+  const customer = await prisma.customer.create({ data:{ name: raw.guestName.trim(), wa: raw.guestWa.trim(), address: raw.guestAddress?.trim() || null }});
+  const order = await prisma.$transaction(async (tx)=>{
+    const o = await tx.order.create({ data:{
+      customerId: customer.id,
+      userId: null,
+      paymentMethod: raw.paymentMethod as unknown as string as never,
+      total,
+      status: "BARU",
+    }});
+    await tx.orderItem.createMany({ data: itemsWithPrice.map(it=>({ orderId: o.id, ...it }))});
+    return o;
+  });
+  revalidatePath("/orders");
+  return order.id;
+}
+
 export async function deleteOrder(id: string){
   const user = await requireUser();
   const order = await prisma.order.findUnique({where:{id}});

@@ -3,6 +3,9 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { createProduct, updateProduct, deleteProduct } from "./actions";
 import { productSchema } from "@/lib/validations";
+import { Input, Select, Label, Textarea } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 
 type Product = { id: string; name: string; price: number; stock: number; unit?: string; type?: string; trackStock?: boolean; isActive?: boolean; description?: string | null };
 
@@ -47,36 +50,64 @@ export function ProductModal({ product, onClose }: { product?: Product; onClose:
   }
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-md rounded-lg bg-white p-6">
-        <h2 className="mb-4 text-lg font-semibold">{product ? "Edit Produk / Layanan" : "Tambah Produk / Layanan"}</h2>
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <input name="name" placeholder="Nama" value={name} onChange={(e) => setName(e.target.value)} className="w-full rounded border px-3 py-2 text-sm" required />
-          <textarea name="description" placeholder="Deskripsi (opsional)" value={description} onChange={(e) => setDescription(e.target.value)} className="w-full rounded border px-3 py-2 text-sm" rows={2} />
-          <div className="grid grid-cols-2 gap-2">
-            <input name="price" type="number" placeholder="Harga" value={price} onChange={(e) => setPrice(e.target.value)} className="w-full rounded border px-3 py-2 text-sm" required />
-            <input name="unit" placeholder="Satuan (pcs/kg/hari)" value={unit} onChange={(e) => setUnit(e.target.value)} className="w-full rounded border px-3 py-2 text-sm" />
+    <div role="dialog" aria-modal="true" aria-labelledby="product-modal-title" className="fixed inset-0 z-50 overflow-y-auto bg-[#0F172A]/40 p-3 sm:p-4">
+      <div className="flex min-h-full items-center justify-center">
+      <Card className="max-h-[calc(100dvh-1.5rem)] w-full max-w-xl overflow-y-auto p-5 sm:max-h-[calc(100dvh-2rem)] sm:p-6">
+        <h2 id="product-modal-title" className="text-lg font-bold tracking-tight text-[#0F172A]">{product ? "Edit Produk / Layanan" : "Tambah Produk / Layanan"}</h2>
+        <p className="mt-1 text-sm text-[#64748B]">Lengkapi informasi produk dan ketersediaannya.</p>
+        <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+          <div>
+            <Label>Nama</Label>
+            <Input name="name" placeholder="Nama produk" value={name} onChange={(e) => setName(e.target.value)} required />
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            <select name="type" value={type} onChange={(e) => setType(e.target.value)} className="w-full rounded border px-3 py-2 text-sm">
-              <option value="BARANG">BARANG</option>
-              <option value="JASA">JASA</option>
-              <option value="SEWA">SEWA</option>
-            </select>
-            <select value={availability} onChange={(e) => setAvailability(e.target.value as any)} className="w-full rounded border px-3 py-2 text-sm">
-              <option value="selalu">Selalu tersedia</option>
-              <option value="stok">Menggunakan stok</option>
-              <option value="tidak">Tidak tersedia</option>
-            </select>
+          <div>
+            <Label>Deskripsi (opsional)</Label>
+            <Textarea name="description" placeholder="Deskripsi singkat" value={description} onChange={(e) => setDescription(e.target.value)} rows={2} />
           </div>
-          {availability === "stok" && <input name="stock" type="number" placeholder="Stok tersedia" value={stock} onChange={(e) => setStock(e.target.value)} className="w-full rounded border px-3 py-2 text-sm" required />}
-          {availability === "selalu" && <p className="text-xs text-slate-500">Selalu tersedia — stok tidak diperlukan, bisa dipesan kapan saja.</p>}
-          {availability === "tidak" && <p className="text-xs text-slate-500">Tidak tersedia — tidak muncul di Katalog dan tidak bisa dipesan.</p>}
-          <div className="flex justify-end gap-2 pt-2">
-            <button type="button" onClick={onClose} className="rounded border px-3 py-1.5 text-sm">Batal</button>
-            <button type="submit" className="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700">{product ? "Update" : "Simpan"}</button>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>Harga</Label>
+              <Input name="price" type="number" placeholder="0" value={price} onChange={(e) => setPrice(e.target.value)} required />
+            </div>
+            <div>
+              <Label>Satuan</Label>
+              <Input name="unit" placeholder="pcs / kg / hari" value={unit} onChange={(e) => setUnit(e.target.value)} />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>Tipe</Label>
+              <Select name="type" value={type} onChange={(e) => setType(e.target.value)}>
+                <option value="BARANG">BARANG</option>
+                <option value="JASA">JASA</option>
+                <option value="SEWA">SEWA</option>
+              </Select>
+            </div>
+            <div>
+              <Label>Ketersediaan</Label>
+              <Select value={availability} onChange={(e) => setAvailability(e.target.value as any)}>
+                <option value="selalu">Selalu tersedia</option>
+                <option value="stok">Menggunakan stok</option>
+                <option value="tidak">Tidak tersedia</option>
+              </Select>
+            </div>
+          </div>
+          {availability === "stok" && (
+            <div>
+              <Label>Stok tersedia</Label>
+              <Input name="stock" type="number" value={stock} onChange={(e) => setStock(e.target.value)} required />
+            </div>
+          )}
+          {availability === "selalu" && <p className="rounded-[12px] bg-[#F8FAFC] px-3 py-2 text-xs text-[#64748B]">Selalu tersedia — stok tidak diperlukan, bisa dipesan kapan saja.</p>}
+          {availability === "tidak" && <p className="rounded-[12px] bg-amber-50 px-3 py-2 text-xs text-[#D97706]">Tidak tersedia — tidak muncul di Katalog dan tidak bisa dipesan.</p>}
+          <div className="flex justify-end gap-2 border-t border-[#E2E8F0] pt-4">
+            <Button type="button" variant="secondary" onClick={onClose}>
+              Batal
+            </Button>
+            <Button type="submit">{product ? "Update" : "Simpan"}</Button>
           </div>
         </form>
+      </Card>
       </div>
     </div>
   );
@@ -86,8 +117,12 @@ export function ProductActions({ product }: { product: Product }) {
   const [edit, setEdit] = useState(false);
   return (
     <>
-      <button onClick={() => setEdit(true)} className="rounded border px-2 py-1 text-xs">Edit</button>
+      <div className="flex shrink-0 gap-2">
+      <Button variant="secondary" size="sm" onClick={() => setEdit(true)} className="h-9 rounded-[10px]">
+        Edit
+      </Button>
       <DeleteButton id={product.id} />
+      </div>
       {edit && <ProductModal product={product} onClose={() => setEdit(false)} />}
     </>
   );
@@ -97,7 +132,12 @@ export function CreateProductButton() {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <button onClick={() => setOpen(true)} className="rounded bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700">Tambah Produk / Layanan</button>
+      <Button onClick={() => setOpen(true)} className="h-10 gap-2 rounded-[12px] px-4">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="h-4 w-4">
+          <path d="M12 5v14M5 12h14" />
+        </svg>
+        Tambah Produk
+      </Button>
       {open && <ProductModal onClose={() => setOpen(false)} />}
     </>
   );
@@ -117,5 +157,9 @@ function DeleteButton({ id }: { id: string }) {
       toast.error(err instanceof Error ? err.message : "Gagal hapus produk");
     }
   }
-  return <button onClick={handleDelete} className="rounded border px-2 py-1 text-xs text-red-600">Hapus</button>;
+  return (
+    <Button variant="secondary" size="sm" onClick={handleDelete} className="h-9 rounded-[10px] text-[#DC2626] hover:bg-red-50">
+      Hapus
+    </Button>
+  );
 }
