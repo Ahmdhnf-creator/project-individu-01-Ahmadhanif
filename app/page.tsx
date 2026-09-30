@@ -26,9 +26,9 @@ import {
 } from "@/components/landing/icons";
 
 export const metadata: Metadata = {
-  title: "Bulan-01 — Kelola pesanan, produk, dan pelanggan UMKM",
+  title: "OrderKu — Kelola pesanan, produk, dan pelanggan UMKM",
   description:
-    "Bulan-01 membantu usaha kecil mengelola pesanan, produk, pembayaran, dan pelanggan dalam satu tempat. Pelanggan bisa order langsung dari link katalog tanpa login.",
+    "OrderKu membantu usaha kecil mengelola pesanan, produk, pembayaran, dan pelanggan dalam satu tempat. Pelanggan bisa order langsung dari link katalog tanpa login.",
 };
 
 const trustPoints = [
@@ -139,7 +139,7 @@ export default function Home() {
               <SectionHeading
                 eyebrow="Untuk berbagai bisnis"
                 title="Usaha apa pun, cara kelolanya tetap simpel."
-                description="Bulan-01 membantu berbagai jenis usaha mengatur pesanan, produk, layanan, dan pelanggan dari satu tempat."
+                description="OrderKu membantu berbagai jenis usaha mengatur pesanan, produk, layanan, dan pelanggan dari satu tempat."
                 action={
                   <a
                     href="#fitur"
@@ -228,7 +228,7 @@ export default function Home() {
           <div className="mx-auto max-w-[1280px] px-5 lg:px-8">
             <Reveal>
               <SectionHeading
-                eyebrow="Kenapa Bulan-01?"
+                eyebrow="Kenapa OrderKu?"
                 title="Dari ribet jadi praktis."
                 description="Dulu semua serba manual — pesanan numpuk di chat, catatan berserakan. Sekarang semua lebih mudah dalam satu platform."
               />
@@ -249,7 +249,7 @@ export default function Home() {
                 align="center"
                 eyebrow="Harga"
                 title="Mulai gratis, kembangkan kapan saja."
-                description="Coba dulu semua fitur inti Bulan-01 untuk usahamu. Tidak ada biaya di awal — naik kelas saat usahamu siap berkembang."
+                description="Coba dulu semua fitur inti OrderKu untuk usahamu. Tidak ada biaya di awal — naik kelas saat usahamu siap berkembang."
               />
             </Reveal>
             <Reveal delay={100}>

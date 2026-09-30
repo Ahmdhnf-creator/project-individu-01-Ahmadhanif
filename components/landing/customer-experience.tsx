@@ -122,7 +122,7 @@ export function CustomerExperience() {
         </span>
         <span className="inline-flex items-center gap-1.5 rounded-full border border-[#E2E8F0] bg-white px-3 py-1 text-[11px] font-semibold text-[#64748B]">
           <LinkIcon className="h-3.5 w-3.5 text-[#2563EB]" />
-          bulan-01.app/toko-sari
+          orderku.app/toko-sari
         </span>
       </div>
 

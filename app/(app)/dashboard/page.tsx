@@ -64,7 +64,7 @@ export default async function Dashboard() {
     <div className="mx-auto max-w-6xl space-y-8 md:space-y-10">
       <header className="flex items-center justify-between gap-4">
         <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#2563EB]">UMKM Order</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#2563EB]">OrderKu</p>
           <h1 className="mt-2 truncate text-2xl font-bold tracking-tight text-[#0F172A] md:text-[30px]">Halo, {user.name}</h1>
           <p className="mt-1 text-sm text-[#64748B]">Ringkasan aktivitas bisnismu.</p>
         </div>

@@ -59,7 +59,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <aside className="hidden w-[240px] shrink-0 flex-col border-r border-[#E2E8F0] bg-white md:flex">
         <div className="px-6 py-6">
           <Link href="/dashboard" className="text-[16px] font-bold tracking-tight text-[#0F172A]">
-            UMKM Order
+            OrderKu
           </Link>
           <p className="mt-1 text-xs text-[#64748B]">Order Management</p>
         </div>
@@ -96,7 +96,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <div className="flex flex-1 flex-col">
         <header className="flex items-center justify-between border-b border-[#E2E8F0] bg-white px-4 py-3 md:px-6 md:py-3.5">
           <Link href="/dashboard" className="text-sm font-bold text-[#0F172A] md:hidden">
-            UMKM Order
+            OrderKu
           </Link>
           <div className="hidden items-center gap-2 text-sm md:flex">
             <span className="font-medium">{user.name}</span>

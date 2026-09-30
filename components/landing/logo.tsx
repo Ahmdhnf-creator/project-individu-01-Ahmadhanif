@@ -22,7 +22,7 @@ export function Logo({ className = "", href = "/" }: { className?: string; href?
     <a href={href} className={`group inline-flex items-center gap-2.5 ${className}`}>
       <LogoMark className="h-8 w-8 transition-transform duration-300 group-hover:-translate-y-0.5" />
       <span className="text-[16px] font-extrabold tracking-tight text-[#0F172A]">
-        Bulan-01
+        OrderKu
       </span>
     </a>
   );

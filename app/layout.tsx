@@ -9,7 +9,7 @@ const plusJakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "UMKM Order - Kelola Pesanan UMKM Lebih Mudah",
+  title: "OrderKu - Kelola Pesanan UMKM Lebih Mudah",
   description: "Order Management untuk UMKM Indonesia — produk, pelanggan, pesanan, dan laporan dalam satu dashboard.",
 };
 

@@ -49,7 +49,7 @@ export default async function CatalogPage() {
               <span className="h-2.5 w-2.5 rounded-full bg-[#FCD34D]" />
               <span className="h-2.5 w-2.5 rounded-full bg-[#6EE7B7]" />
               <span className="ml-2 truncate rounded-[8px] bg-white px-2.5 py-1 text-[11px] text-[#94A3B8] ring-1 ring-[#E2E8F0]">
-                toko-kamu.bulan-01.app
+                toko-kamu.orderku.app
               </span>
             </div>
             <div className="p-3 sm:p-4">

@@ -23,7 +23,7 @@ export default async function RegisterPage({ searchParams }: { searchParams: Pro
       <header className="border-b border-zinc-100">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-5">
           <Link href="/" className="text-[15px] font-semibold tracking-tight">
-            UMKM Order
+            OrderKu
           </Link>
           <Link href="/login" className="text-sm text-zinc-600 hover:text-zinc-900">
             Masuk

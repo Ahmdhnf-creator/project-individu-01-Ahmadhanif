@@ -85,7 +85,7 @@ export function BeforeAfter() {
       <article className="overflow-hidden rounded-[20px] border border-[#BFDBFE] bg-[#F8FBFF]">
         <div className="p-5">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-[#2563EB] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-white">
-            Dengan Bulan-01
+            Dengan OrderKu
           </span>
           <p className="mt-3 text-[15px] font-bold leading-6 text-[#0F172A]">
             Semua pesanan tersusun dalam satu tempat.

@@ -74,7 +74,7 @@ export function Footer() {
         </div>
 
         <div className="mt-10 flex flex-col gap-3 border-t border-[#E2E8F0] pt-6 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-xs text-[#64748B]">© 2026 Bulan-01. Semua hak dilindungi.</p>
+          <p className="text-xs text-[#64748B]">© 2026 OrderKu. Semua hak dilindungi.</p>
           <p className="text-xs text-[#64748B]">Dibuat untuk UMKM Indonesia.</p>
         </div>
       </div>

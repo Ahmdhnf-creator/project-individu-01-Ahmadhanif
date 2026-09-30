@@ -113,7 +113,7 @@ export function DashboardShowcase() {
         <span className="h-2.5 w-2.5 rounded-full bg-[#FCD34D]" />
         <span className="h-2.5 w-2.5 rounded-full bg-[#6EE7B7]" />
         <span className="ml-3 hidden rounded-[8px] bg-white px-3 py-1 text-[11px] text-[#94A3B8] ring-1 ring-[#E2E8F0] sm:inline">
-          bulan-01.app/dashboard
+          orderku.app/dashboard
         </span>
       </div>
 
@@ -121,7 +121,7 @@ export function DashboardShowcase() {
         <aside className="hidden border-r border-[#E2E8F0] bg-[#F8FAFC] p-4 md:flex md:flex-col">
           <span className="flex items-center gap-2 px-1">
             <LogoMark className="h-7 w-7" />
-            <span className="text-[13px] font-extrabold text-[#0F172A]">Bulan-01</span>
+            <span className="text-[13px] font-extrabold text-[#0F172A]">OrderKu</span>
           </span>
           <ul className="mt-5 space-y-1">
             {sidebarNav.map((item) => (

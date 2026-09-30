@@ -19,7 +19,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
       <header className="border-b border-slate-200">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
           <Link href="/" className="text-[15px] font-semibold tracking-tight text-slate-900">
-            UMKM Order
+            OrderKu
           </Link>
           <Link href="/register" className="text-sm text-slate-500 hover:text-slate-900">
             Daftar
@@ -49,7 +49,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         <div className="flex flex-1 items-center justify-center px-6 py-12">
           <div className="w-full max-w-sm">
             <Link href="/" className="text-sm font-semibold text-slate-900 md:hidden">
-              UMKM Order
+              OrderKu
             </Link>
             <h2 className="mt-6 text-xl font-semibold tracking-tight text-slate-900 md:mt-0">Selamat datang kembali</h2>
             <p className="mt-1 text-sm text-slate-500">Masuk untuk melanjutkan ke dashboard.</p>

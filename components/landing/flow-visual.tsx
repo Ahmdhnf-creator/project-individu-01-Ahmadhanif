@@ -47,7 +47,7 @@ export function FlowVisual() {
       <figure className="overflow-hidden rounded-[20px] border border-[#BFDBFE] bg-white p-3 shadow-[0_24px_64px_-44px_rgba(15,23,42,0.5)] sm:p-4">
         <Image
           src={flowImage}
-          alt="Alur pesanan Bulan-01: katalog, checkout, detail pesanan, sampai pesanan berhasil"
+          alt="Alur pesanan OrderKu: katalog, checkout, detail pesanan, sampai pesanan berhasil"
           className="h-auto w-full rounded-[14px]"
         />
         <figcaption className="px-1 pt-3 text-center text-[11px] text-[#94A3B8]">
