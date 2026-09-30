@@ -1,0 +1,169 @@
+"use server";
+import { prisma } from "@/lib/prisma";
+import { requireUser } from "@/lib/auth";
+import { canTransition, getRentalDaysInclusive } from "@/lib/order";
+import type { OrderStatus } from "@/lib/order";
+import { revalidatePath } from "next/cache";
+import { createOrderSchema } from "@/lib/validations";
+import { saveFile, validateFile } from "@/lib/storage";
+
+export async function createOrder(formData: FormData){
+  const user = await requireUser();
+  const raw = {
+    customerId: (formData.get("customerId") as string) || undefined,
+    paymentMethod: formData.get("paymentMethod") as string,
+    items: JSON.parse((formData.get("items") as string) || "[]"),
+  };
+  const parsed = createOrderSchema.parse(raw);
+  const products = await prisma.product.findMany({ where:{ id:{ in: parsed.items.map(i=>i.productId)}}});
+  if(products.length !== parsed.items.length) throw new Error("Produk tidak ditemukan");
+  // validasi isActive & stok hanya jika trackStock
+  for(const p of products){
+    if(!p.isActive) throw new Error(`Produk ${p.name} tidak aktif`);
+  }
+  const itemsWithPrice = parsed.items.map(i=>{
+    const p = products.find(x=>x.id===i.productId)!;
+    if(p.trackStock && p.stock < i.qty) throw new Error(`Stok ${p.name} tidak cukup (sisa ${p.stock})`);
+    // SEWA: hitung durasi inclusive, subtotal = harga * durasi (+ qty jika >1 unit)
+    if((p as unknown as { type: string }).type === "SEWA"){
+      const start = (i as unknown as { startDate?: string }).startDate;
+      const end = (i as unknown as { endDate?: string }).endDate;
+      if(!start || !end) throw new Error(`Tanggal sewa wajib untuk ${p.name}`);
+      const days = getRentalDaysInclusive(start, end);
+      if(days < 1) throw new Error(`Durasi tidak valid untuk ${p.name}`);
+      // validasi tanggal mulai <= kembali sudah dihitung via days (jika end<start, days akan <1 tapi kita throw)
+      // cek start <= end
+      const s = new Date(String(start));
+      const e = new Date(String(end));
+      if(s.getTime() > e.getTime()) throw new Error(`Tanggal mulai tidak boleh setelah tanggal kembali untuk ${p.name}`);
+      const subtotal = p.price * days * i.qty;
+      return { productId:i.productId, qty:i.qty, unit: p.unit, price:p.price, subtotal, startDate: new Date(String(start)), endDate: new Date(String(end)) };
+    }
+    return { productId:i.productId, qty:i.qty, unit: p.unit, price:p.price, subtotal:p.price*i.qty, startDate: null as unknown as Date, endDate: null as unknown as Date };
+  });
+  const total = itemsWithPrice.reduce((a,b)=>a+b.subtotal,0);
+  await prisma.$transaction(async (tx)=>{
+    const order = await tx.order.create({ data:{
+      customerId: user.role==="PELANGGAN" ? null : (parsed.customerId || null),
+      userId: user.role==="PELANGGAN" ? user.id : null,
+      paymentMethod: parsed.paymentMethod as any,
+      total,
+      status: "BARU",
+      note: parsed.note || null,
+    }});
+    await tx.orderItem.createMany({ data: itemsWithPrice.map(it=>({ orderId: order.id, ...it }))});
+  });
+  revalidatePath("/orders");
+  revalidatePath("/catalog");
+}
+
+export async function updateOrderStatus(id: string, next: OrderStatus){
+  const user = await requireUser();
+  if(user.role==="PELANGGAN") throw new Error("Forbidden");
+  const order = await prisma.order.findUnique({ include:{items:true}, where:{id}});
+  if(!order) throw new Error("Order tidak ditemukan");
+  if(!canTransition(order.status as OrderStatus, next as OrderStatus)) throw new Error("Transisi tidak valid");
+  if(next==="SELESAI"){
+    await prisma.$transaction(async (tx)=>{
+      for(const item of order.items){
+        const p = await tx.product.findUnique({where:{id:item.productId}});
+        if(!p) throw new Error(`Produk ${item.productId} tidak ditemukan`);
+        if(p.trackStock && p.stock < item.qty) throw new Error(`Stok ${p.name} tidak cukup (sisa ${p.stock})`);
+        if(p.trackStock){
+          await tx.product.update({ where:{id:p.id}, data:{ stock:{ decrement: item.qty }}});
+        }
+      }
+      await tx.order.update({ where:{id}, data:{ status: next as any }});
+    });
+  } else {
+    await prisma.order.update({ where:{id}, data:{ status: next as any }});
+  }
+  revalidatePath("/orders");
+  revalidatePath(`/orders/${id}`);
+}
+
+export async function createGuestOrder(formData: FormData){
+  const raw = {
+    guestName: (formData.get("guestName") as string) || "",
+    guestWa: (formData.get("guestWa") as string) || "",
+    guestAddress: (formData.get("guestAddress") as string) || undefined,
+    paymentMethod: formData.get("paymentMethod") as string,
+    items: JSON.parse((formData.get("items") as string) || "[]"),
+  };
+  if(!raw.guestName || raw.guestName.trim().length < 2) throw new Error("Nama wajib minimal 2 karakter");
+  if(!raw.guestWa || raw.guestWa.trim().length < 8) throw new Error("WhatsApp wajib minimal 8 karakter");
+  const parsedItems = createOrderSchema.shape.items.parse(raw.items);
+  // reuse paymentMethod validation
+  createOrderSchema.shape.paymentMethod.parse(raw.paymentMethod);
+  const products = await prisma.product.findMany({ where:{ id:{ in: parsedItems.map((i: { productId: string })=>i.productId)}}});
+  if(products.length !== parsedItems.length) throw new Error("Produk tidak ditemukan");
+  for(const p of products){
+    if(!p.isActive) throw new Error(`Produk ${p.name} tidak aktif`);
+  }
+  const itemsWithPrice = parsedItems.map((i: { productId: string; qty: number; startDate?: string; endDate?: string })=>{
+    const p = products.find(x=>x.id===i.productId)!;
+    if(p.trackStock && p.stock < i.qty) throw new Error(`Stok ${p.name} tidak cukup (sisa ${p.stock})`);
+    if((p as unknown as { type: string }).type === "SEWA"){
+      const start = (i as unknown as { startDate?: string }).startDate;
+      const end = (i as unknown as { endDate?: string }).endDate;
+      if(!start || !end) throw new Error(`Tanggal sewa wajib untuk ${p.name}`);
+      const days = getRentalDaysInclusive(start, end);
+      if(new Date(String(start)).getTime() > new Date(String(end)).getTime()) throw new Error(`Tanggal mulai tidak boleh setelah kembali untuk ${p.name}`);
+      const subtotal = p.price * days * i.qty;
+      return { productId:i.productId, qty:i.qty, unit: p.unit, price:p.price, subtotal, startDate: new Date(String(start)), endDate: new Date(String(end)) };
+    }
+    return { productId:i.productId, qty:i.qty, unit: p.unit, price:p.price, subtotal:p.price*i.qty, startDate: null as unknown as Date, endDate: null as unknown as Date };
+  });
+  const total = itemsWithPrice.reduce((a,b)=>a+b.subtotal,0);
+  // buat customer baru untuk guest (tanpa User)
+  const customer = await prisma.customer.create({ data:{ name: raw.guestName.trim(), wa: raw.guestWa.trim(), address: raw.guestAddress?.trim() || null }});
+  const order = await prisma.$transaction(async (tx)=>{
+    const o = await tx.order.create({ data:{
+      customerId: customer.id,
+      userId: null,
+      paymentMethod: raw.paymentMethod as unknown as string as never,
+      total,
+      status: "BARU",
+    }});
+    await tx.orderItem.createMany({ data: itemsWithPrice.map(it=>({ orderId: o.id, ...it }))});
+    return o;
+  });
+  revalidatePath("/orders");
+  return order.id;
+}
+
+export async function deleteOrder(id: string){
+  const user = await requireUser();
+  const order = await prisma.order.findUnique({where:{id}});
+  if(!order) throw new Error("Not found");
+  if(order.status==="SELESAI") throw new Error("Tidak boleh hapus pesanan selesai");
+  if(user.role==="PELANGGAN" && order.userId!==user.id) throw new Error("Forbidden");
+  await prisma.order.delete({where:{id}});
+  revalidatePath("/orders");
+}
+
+export async function uploadProof(formData: FormData){
+  const user = await requireUser();
+  const orderId = formData.get("orderId") as string;
+  if(!orderId) throw new Error("orderId wajib");
+  const order = await prisma.order.findUnique({where:{id:orderId}});
+  if(!order) throw new Error("Order tidak ditemukan");
+  if(user.role==="PELANGGAN" && order.userId!==user.id) throw new Error("Forbidden");
+  const file = formData.get("proof") as File;
+  if(!file || file.size===0) throw new Error("File wajib");
+  validateFile(file);
+  const url = await saveFile(file);
+  await prisma.order.update({ where:{id:orderId}, data:{ proofUrl: url }});
+  revalidatePath(`/orders/${orderId}`);
+  return url;
+}
+export async function updatePaymentStatus(orderId: string, status: "BELUM_BAYAR"|"LUNAS"){
+  const user = await requireUser();
+  if(user.role==="PELANGGAN") throw new Error("Forbidden: hanya STAFF/ADMIN yang bisa verifikasi pembayaran");
+  const order = await prisma.order.findUnique({where:{id:orderId}});
+  if(!order) throw new Error("Not found");
+  if(order.paymentMethod==="TRANSFER" && status==="LUNAS" && !order.proofUrl) throw new Error("Upload bukti transfer dulu");
+  await prisma.order.update({ where:{id:orderId}, data:{ paymentStatus: status as any }});
+  revalidatePath(`/orders/${orderId}`);
+  revalidatePath("/orders");
+}
