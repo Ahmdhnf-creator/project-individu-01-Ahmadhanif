@@ -1,4 +1,5 @@
-import { requireUser } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/auth";
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
@@ -27,7 +28,8 @@ function formatOrderDate(date: Date) {
 }
 
 export default async function Dashboard() {
-  const user = await requireUser();
+  const user = await getCurrentUser();
+  if (!user) redirect("/login");
   const isPelanggan = user.role === "PELANGGAN";
   const where = isPelanggan ? { userId: user.id } : {};
   const revenueWhere = { ...where, paymentStatus: "LUNAS" as const, status: { not: "BATAL" as const } };
