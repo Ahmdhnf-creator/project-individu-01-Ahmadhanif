@@ -2,21 +2,32 @@ import Link from "next/link";
 import { registerSchema } from "@/lib/validations";
 import { prisma } from "@/lib/prisma";
 import { hashPassword, createSession } from "@/lib/auth";
+import { isBillingPlan } from "@/lib/billing";
 import { redirect } from "next/navigation";
 
-export default async function RegisterPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
-  const { error } = await searchParams;
-  async function register(formData: FormData) {
+export default async function RegisterPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string; plan?: string | string[] }>;
+}) {
+  const params = await searchParams;
+  const { error } = params;
+  const rawPlan = Array.isArray(params.plan) ? params.plan[0] : params.plan;
+  const plan = isBillingPlan(rawPlan) ? rawPlan : null;
+  const loginHref = plan ? `/login?plan=${plan}` : "/login";
+
+  async function register(boundPlan: string, formData: FormData) {
     "use server";
     const data = registerSchema.parse(Object.fromEntries(formData));
+    const planSuffix = isBillingPlan(boundPlan) ? `&plan=${boundPlan}` : "";
     const existing = await prisma.user.findUnique({ where: { email: data.email } });
-    if (existing) redirect("/register?error=Email%20sudah%20terdaftar");
+    if (existing) redirect(`/register?error=Email%20sudah%20terdaftar${planSuffix}`);
     const hash = await hashPassword(data.password);
     const user = await prisma.user.create({
       data: { name: data.name, email: data.email, password: hash, wa: data.wa, address: data.address, role: "PELANGGAN" },
     });
     await createSession(user.id);
-    redirect("/catalog");
+    redirect(isBillingPlan(boundPlan) ? `/billing/checkout?plan=${boundPlan}` : "/catalog");
   }
   return (
     <main className="flex min-h-screen flex-col bg-white">
@@ -25,7 +36,7 @@ export default async function RegisterPage({ searchParams }: { searchParams: Pro
           <Link href="/" className="text-[15px] font-semibold tracking-tight">
             OrderKu
           </Link>
-          <Link href="/login" className="text-sm text-zinc-600 hover:text-zinc-900">
+          <Link href={loginHref} className="text-sm text-zinc-600 hover:text-zinc-900">
             Masuk
           </Link>
         </div>
@@ -35,7 +46,7 @@ export default async function RegisterPage({ searchParams }: { searchParams: Pro
           <h1 className="text-xl font-semibold tracking-tight">Daftar</h1>
           <p className="mt-1 text-sm text-zinc-600">Buat akun pelanggan untuk mulai memesan.</p>
           {error && <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
-          <form action={register} className="mt-6 space-y-4">
+            <form action={register.bind(null, plan ?? "")} className="mt-6 space-y-4">
             <div>
               <label className="mb-1.5 block text-sm font-medium">Nama</label>
               <input name="name" type="text" placeholder="Nama lengkap" required className="w-full rounded-lg border border-zinc-200 px-3 py-2.5 text-sm outline-none placeholder:text-zinc-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
@@ -62,7 +73,7 @@ export default async function RegisterPage({ searchParams }: { searchParams: Pro
           </form>
           <p className="mt-6 text-center text-sm text-zinc-600">
             Sudah punya akun?{" "}
-            <Link href="/login" className="font-medium text-zinc-900 underline decoration-zinc-300 underline-offset-4 hover:decoration-zinc-900">
+            <Link href={loginHref} className="font-medium text-zinc-900 underline decoration-zinc-300 underline-offset-4 hover:decoration-zinc-900">
               Masuk
             </Link>
           </p>

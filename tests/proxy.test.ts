@@ -54,3 +54,35 @@ describe("proxy: halaman auth tidak boleh mem-bounce berdasarkan keberadaan cook
     expect(res.status).toBe(200);
   });
 });
+
+describe("proxy: proteksi /billing mempertahankan ?plan=", () => {
+  function locationParts(res: Response) {
+    const loc = res.headers.get("location");
+    const url = new URL(loc ?? "http://localhost:3000/");
+    return { pathname: loc ? url.pathname : null, search: loc ? url.search : "" };
+  }
+
+  it("/billing/checkout?plan=STARTER tanpa session → /login?plan=STARTER", () => {
+    const res = proxy(req("/billing/checkout?plan=STARTER"))!;
+    expect(res.status).toBe(307);
+    expect(locationParts(res)).toEqual({ pathname: "/login", search: "?plan=STARTER" });
+  });
+
+  it("/billing/checkout?plan=PRO dengan session lolos", () => {
+    const res = proxy(req("/billing/checkout?plan=PRO", "valid-sid"))!;
+    expect(locationPath(res)).toBeNull();
+    expect(res.status).toBe(200);
+  });
+
+  it("/billing/status tanpa session → /login, query diteruskan", () => {
+    const res = proxy(req("/billing/status?order_id=ord-1"))!;
+    expect(res.status).toBe(307);
+    expect(locationParts(res)).toEqual({ pathname: "/login", search: "?order_id=ord-1" });
+  });
+
+  it("/billing/checkout dengan session lolos", () => {
+    const res = proxy(req("/billing/checkout?plan=FREE", "valid-sid"))!;
+    expect(res.status).toBe(200);
+    expect(locationPath(res)).toBeNull();
+  });
+});

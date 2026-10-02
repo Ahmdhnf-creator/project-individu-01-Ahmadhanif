@@ -2,17 +2,29 @@ import Link from "next/link";
 import { loginSchema } from "@/lib/validations";
 import { prisma } from "@/lib/prisma";
 import { verifyPassword, createSession } from "@/lib/auth";
+import { isBillingPlan } from "@/lib/billing";
 import { redirect } from "next/navigation";
 
-export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
-  const { error } = await searchParams;
-  async function login(formData: FormData) {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string; plan?: string | string[] }>;
+}) {
+  const params = await searchParams;
+  const { error } = params;
+  const rawPlan = Array.isArray(params.plan) ? params.plan[0] : params.plan;
+  const plan = isBillingPlan(rawPlan) ? rawPlan : null;
+  const registerHref = plan ? `/register?plan=${plan}` : "/register";
+
+  async function login(boundPlan: string, formData: FormData) {
     "use server";
     const data = loginSchema.parse(Object.fromEntries(formData));
+    const planSuffix = isBillingPlan(boundPlan) ? `&plan=${boundPlan}` : "";
     const user = await prisma.user.findUnique({ where: { email: data.email } });
-    if (!user || !(await verifyPassword(data.password, user.password))) redirect("/login?error=Email%20atau%20password%20salah");
+    if (!user || !(await verifyPassword(data.password, user.password)))
+      redirect(`/login?error=Email%20atau%20password%20salah${planSuffix}`);
     await createSession(user.id);
-    redirect("/dashboard");
+    redirect(isBillingPlan(boundPlan) ? `/billing/checkout?plan=${boundPlan}` : "/dashboard");
   }
   return (
     <div className="min-h-screen bg-white text-slate-900 antialiased">
@@ -21,7 +33,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           <Link href="/" className="text-[15px] font-semibold tracking-tight text-slate-900">
             OrderKu
           </Link>
-          <Link href="/register" className="text-sm text-slate-500 hover:text-slate-900">
+          <Link href={registerHref} className="text-sm text-slate-500 hover:text-slate-900">
             Daftar
           </Link>
         </div>
@@ -54,7 +66,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
             <h2 className="mt-6 text-xl font-semibold tracking-tight text-slate-900 md:mt-0">Selamat datang kembali</h2>
             <p className="mt-1 text-sm text-slate-500">Masuk untuk melanjutkan ke dashboard.</p>
             {error && <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-[#DC2626]">{error}</p>}
-            <form action={login} className="mt-6 space-y-4">
+            <form action={login.bind(null, plan ?? "")} className="mt-6 space-y-4">
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-slate-900">Email</label>
                 <input
@@ -81,7 +93,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
             </form>
             <p className="mt-6 text-center text-sm text-slate-500">
               Belum punya akun?{" "}
-              <Link href="/register" className="font-medium text-[#2563EB] hover:text-[#1D4ED8]">
+              <Link href={registerHref} className="font-medium text-[#2563EB] hover:text-[#1D4ED8]">
                 Daftar
               </Link>
             </p>

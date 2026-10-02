@@ -1,10 +1,125 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-generator client {
-  provider = "prisma-client-js"
+model User {
+  id                  String               @id @default(cuid())
+  email               String               @unique
+  password            String
+  name                String
+  role                Role                 @default(PELANGGAN)
+  wa                  String?
+  address             String?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  billingTransactions BillingTransaction[]
+  orders              Order[]
+  sessions            Session[]
+  subscriptions       Subscription[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Product {
+  id          String      @id @default(cuid())
+  name        String
+  description String?
+  price       Int
+  unit        String      @default("pcs")
+  type        ItemType    @default(BARANG)
+  trackStock  Boolean     @default(true)
+  stock       Int         @default(0)
+  isActive    Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  orderItems  OrderItem[]
+}
+
+model Customer {
+  id        String   @id @default(cuid())
+  name      String
+  wa        String
+  address   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  orders    Order[]
+}
+
+model Order {
+  id            String        @id @default(cuid())
+  customerId    String?
+  userId        String?
+  status        OrderStatus   @default(BARU)
+  paymentMethod PaymentMethod
+  paymentStatus PaymentStatus @default(BELUM_BAYAR)
+  proofUrl      String?
+  total         Int           @default(0)
+  note          String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  customer      Customer?     @relation(fields: [customerId], references: [id])
+  user          User?         @relation(fields: [userId], references: [id])
+  items         OrderItem[]
+}
+
+model OrderItem {
+  id        String    @id @default(cuid())
+  orderId   String
+  productId String
+  qty       Int
+  unit      String    @default("pcs")
+  price     Int
+  subtotal  Int
+  note      String?
+  startDate DateTime?
+  endDate   DateTime?
+  order     Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product   @relation(fields: [productId], references: [id])
+
+  @@unique([orderId, productId])
+}
+
+model Subscription {
+  id        String             @id @default(cuid())
+  userId    String
+  plan      BillingPlan
+  status    SubscriptionStatus @default(ACTIVE)
+  startAt   DateTime
+  endAt     DateTime
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model BillingTransaction {
+  id                    String        @id @default(cuid())
+  userId                String
+  plan                  BillingPlan
+  amount                Int
+  status                BillingStatus @default(PENDING)
+  midtransOrderId       String        @unique
+  midtransTransactionId String?       @unique
+  snapToken             String?
+  snapRedirectUrl       String?
+  paymentReference      String?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  user                  User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 enum Role {
@@ -39,83 +154,21 @@ enum PaymentStatus {
   LUNAS
 }
 
-model User {
-  id        String    @id @default(cuid())
-  email     String    @unique
-  password  String
-  name      String
-  role      Role      @default(PELANGGAN)
-  wa        String?
-  address   String?
-  sessions  Session[]
-  orders    Order[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+enum BillingPlan {
+  FREE
+  STARTER
+  PRO
 }
 
-model Session {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  expiresAt DateTime
-  createdAt DateTime @default(now())
+enum SubscriptionStatus {
+  ACTIVE
+  EXPIRED
+  INACTIVE
 }
 
-model Product {
-  id          String      @id @default(cuid())
-  name        String
-  description String?
-  price       Int
-  unit        String      @default("pcs")
-  type        ItemType    @default(BARANG)
-  trackStock  Boolean     @default(true)
-  stock       Int         @default(0)
-  isActive    Boolean     @default(true)
-  orderItems  OrderItem[]
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-}
-
-model Customer {
-  id        String   @id @default(cuid())
-  name      String
-  wa        String
-  address   String?
-  orders    Order[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model Order {
-  id            String        @id @default(cuid())
-  customerId    String?
-  customer      Customer?     @relation(fields: [customerId], references: [id])
-  userId        String?
-  user          User?         @relation(fields: [userId], references: [id])
-  status        OrderStatus   @default(BARU)
-  paymentMethod PaymentMethod
-  paymentStatus PaymentStatus @default(BELUM_BAYAR)
-  proofUrl      String?
-  total         Int           @default(0)
-  note          String?
-  items         OrderItem[]
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-}
-
-model OrderItem {
-  id        String    @id @default(cuid())
-  orderId   String
-  order     Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  productId String
-  product   Product   @relation(fields: [productId], references: [id])
-  qty       Int
-  unit      String    @default("pcs")
-  price     Int
-  subtotal  Int
-  note      String?
-  startDate DateTime?
-  endDate   DateTime?
-
-  @@unique([orderId, productId])
+enum BillingStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  EXPIRED
 }

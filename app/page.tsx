@@ -7,6 +7,7 @@ import { Navbar } from "@/components/landing/navbar";
 import { Footer } from "@/components/landing/footer";
 import { Reveal } from "@/components/landing/reveal";
 import { Eyebrow, SectionHeading } from "@/components/landing/section-heading";
+import { Pricing } from "@/components/landing/pricing";
 import { HeroVisual } from "@/components/landing/hero-visual";
 import { BusinessCard } from "@/components/landing/business-card";
 import { FlowVisual } from "@/components/landing/flow-visual";
@@ -18,7 +19,6 @@ import {
   ArrowRightIcon,
   CakeIcon,
   CameraIcon,
-  CheckIcon,
   HeadsetIcon,
   ShieldIcon,
   SparklesIcon,
@@ -70,12 +70,6 @@ const businesses = [
   },
 ];
 
-const priceFeatures = [
-  "Pesanan & status real-time",
-  "Katalog customer tanpa login",
-  "Produk, jasa & sewa — lengkap dengan stok",
-  "Laporan penjualan harian",
-];
 
 export default function Home() {
   return (
@@ -252,33 +246,7 @@ export default function Home() {
                 description="Coba dulu semua fitur inti OrderKu untuk usahamu. Tidak ada biaya di awal — naik kelas saat usahamu siap berkembang."
               />
             </Reveal>
-            <Reveal delay={100}>
-              <div className="mx-auto mt-10 max-w-md rounded-[20px] border border-[#E2E8F0] bg-white p-6 text-left shadow-[0_24px_60px_-40px_rgba(15,23,42,0.5)] sm:p-7">
-                <p className="text-sm font-bold text-[#2563EB]">Paket Usaha Kecil</p>
-                <p className="mt-2 text-[32px] font-extrabold leading-none tracking-tight text-[#0F172A]">
-                  Gratis untuk memulai
-                </p>
-                <p className="mt-2 text-sm text-[#64748B]">Semua fitur inti, tanpa biaya di awal.</p>
-
-                <ul className="mt-5 space-y-3 border-t border-[#E2E8F0] pt-5">
-                  {priceFeatures.map((f) => (
-                    <li key={f} className="flex items-start gap-2.5 text-sm leading-6 text-[#0F172A]">
-                      <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#ECFDF5] text-[#16A34A]">
-                        <CheckIcon className="h-3 w-3" />
-                      </span>
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-
-                <Link
-                  href="/register"
-                  className="mt-6 inline-flex h-12 w-full items-center justify-center rounded-[12px] bg-[#2563EB] text-[15px] font-bold text-white transition-colors hover:bg-[#1D4ED8]"
-                >
-                  Mulai Gratis
-                </Link>
-              </div>
-            </Reveal>
+            <Pricing />
           </div>
         </section>
 
